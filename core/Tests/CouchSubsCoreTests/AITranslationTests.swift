@@ -122,15 +122,16 @@ final class AITranslationTests: XCTestCase {
         XCTAssertEqual(result, "KRATOS: [tr] We go now.")
         let (request, body) = FakeAI.requests[0]
         XCTAssertEqual(request.url?.absoluteString,
-                       "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent")
+                       "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent")
         XCTAssertEqual(request.httpMethod, "POST")
         XCTAssertEqual(request.value(forHTTPHeaderField: "x-goog-api-key"), secret)
         XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
         let system = ((body["systemInstruction"] as? [String: Any])?["parts"] as? [[String: Any]])?.first?["text"] as? String
         XCTAssertEqual(system, AIRequest.systemPrompt)
         XCTAssertEqual((body["generationConfig"] as? [String: Any])?["maxOutputTokens"] as? Int, AIRequest.maxOutputTokens)
-        // Flash-Lite zaten en az düşünmeyle çalışır; düşünme ayarı gönderilmez.
-        XCTAssertNil((body["generationConfig"] as? [String: Any])?["thinkingConfig"])
+        // Gemini 3.8 Flash düşük düşünmeyle çağrılır; minimal bu modelde desteklenmez.
+        let thinking = (body["generationConfig"] as? [String: Any])?["thinkingConfig"] as? [String: Any]
+        XCTAssertEqual(thinking?["thinkingLevel"] as? String, "LOW")
         // Konuşmacı etiketi gönderilmez; yalnız cümle gider.
         XCTAssertTrue(user(0).hasSuffix("[\"We go now.\"]"))
         XCTAssertFalse(user(0).contains("KRATOS"))
@@ -184,21 +185,22 @@ final class AITranslationTests: XCTestCase {
     func testUnknownModelFallsBackToDefault() async throws {
         _ = try await make(.openAI, model: "gpt-4o").translate("Run!", fallback: local)
         XCTAssertEqual(FakeAI.requests[0].body["model"] as? String, "gpt-6-luna")
-        XCTAssertEqual(AIProvider.gemini.model("").id, "gemini-3.5-flash-lite")
+        XCTAssertEqual(AIProvider.gemini.model("").id, "gemini-3.8-flash")
+        XCTAssertEqual(AIProvider.gemini.model("gemini-3.5-flash-lite").id, "gemini-3.8-flash")
         XCTAssertEqual(AIProvider.claude.model(nil).id, "claude-haiku-5-5")
-        XCTAssertEqual(AIProvider.gemini.engineID(model: "gemini-3.5-flash-lite"), "gemini:gemini-3.5-flash-lite")
+        XCTAssertEqual(AIProvider.gemini.engineID(model: "gemini-3.8-flash"), "gemini:gemini-3.8-flash")
         XCTAssertEqual(AIProvider.openAI.engineID(model: AIProvider.openAI.defaultModel.id), "openai:gpt-6-luna")
     }
 
-    /// Liste Windows ile ortak dosyadan okunur; her hizmette önerilen hızlı model ilk sıradadır.
+    /// Liste Windows ile ortak dosyadan okunur; her hizmette varsayılan model ilk sıradadır.
     func testCatalogIsTheSharedFile() throws {
         for provider in AIProvider.cloud {
             XCTAssertGreaterThanOrEqual(provider.models.count, 2, provider.rawValue)
-            XCTAssertEqual(provider.defaultModel.label, "Fast and cheap (recommended)")
+            XCTAssertEqual(provider.defaultModel.label, provider == .gemini ? "Gemini 3.8 Flash" : "Fast and cheap (recommended)")
             XCTAssertEqual(Set(provider.models.map(\.id)).count, provider.models.count)
         }
-        XCTAssertEqual(AIProvider.gemini.defaultModel, AIModel(id: "gemini-3.5-flash-lite", label: "Fast and cheap (recommended)",
-                                                               freeTier: true, requestsPerMinute: 15))
+        XCTAssertEqual(AIProvider.gemini.defaultModel, AIModel(id: "gemini-3.8-flash", label: "Gemini 3.8 Flash",
+                                                               thinking: "LOW", freeTier: true, requestsPerMinute: 10))
         XCTAssertEqual(AIProvider.claude.defaultModel.thinking, "disabled")
         // Depodaki dosya, uygulamaya giden kopyayla aynıdır; Windows da bu dosyayı gömer.
         let file = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()

@@ -1018,14 +1018,17 @@ public class AppControllerRunTests
     }
 
     /// Listede olmayan kayıtlı model (eski sürümün boş alanı, elle yazılmış ad) varsayılana döner ve hemen kaydedilir.
-    [Fact]
-    public void UnknownSavedModelFallsBackToDefaultAndIsSaved()
+    [Theory]
+    [InlineData("", "gemini-3.8-flash")]
+    [InlineData("gemini-3.5-flash-lite", "gemini-3.8-flash")]
+    [InlineData("gemini-3.6-flash", "gemini-3.6-flash")]
+    public void UnknownSavedModelFallsBackToDefaultAndIsSaved(string savedGemini, string expectedGemini)
     {
         var settingsStore = new MemorySettings();
-        settingsStore.Save(new UserSettings { OpenAiModel = "gpt-4o", GeminiModel = "", ClaudeModel = "claude-sonnet-5-5" });
+        settingsStore.Save(new UserSettings { OpenAiModel = "gpt-4o", GeminiModel = savedGemini, ClaudeModel = "claude-sonnet-5-5" });
         var controller = AppControllerTests.Make(settings: settingsStore);
         Assert.Equal("gpt-6-luna", controller.Settings.OpenAiModel);
-        Assert.Equal("gemini-3.5-flash-lite", controller.Settings.GeminiModel);
+        Assert.Equal(expectedGemini, controller.Settings.GeminiModel);
         Assert.Equal("claude-sonnet-5-5", controller.Settings.ClaudeModel);
         Assert.Equal(controller.Settings, settingsStore.Saved);
         controller.Dispose();

@@ -21,13 +21,13 @@ public static class AiProviders
     public static bool IsLocal(this AiProvider provider) => provider == AiProvider.Local;
 
     /// <summary>
-    /// Seçilebilen modeller; ilki varsayılandır (hızlı ve ucuz). Liste Mac ile ortak <c>ai-models.json</c> dosyasından
+    /// Seçilebilen modeller; ilki varsayılandır. Liste Mac ile ortak <c>ai-models.json</c> dosyasından
     /// gelir (core/Sources/CouchSubsCore/Resources, gömülü kaynak). Yerel modelde liste yoktur; model adını kullanıcı yazar.
     /// </summary>
     public static IReadOnlyList<AiModel> Models(this AiProvider provider) =>
         AiModel.Catalog.TryGetValue(provider.Id(), out var models) ? models : [];
 
-    /// <summary>Hızlı ve ucuz varsayılan model.</summary>
+    /// <summary>Katalogdaki varsayılan model.</summary>
     public static AiModel DefaultModel(this AiProvider provider) => provider.IsLocal()
         ? new AiModel(LocalAiServer.DefaultModel, LocalAiServer.DefaultModel)
         : provider.Models()[0];
@@ -60,7 +60,7 @@ public static class AiProviders
     };
 
     /// <summary>
-    /// Önbellekteki motor adı: model değişince eski modelin çevirileri karışmaz ("gemini:gemini-3.5-flash-lite"). Yerel
+    /// Önbellekteki motor adı: model değişince eski modelin çevirileri karışmaz ("gemini:gemini-3.8-flash"). Yerel
     /// modelde sunucu adresi de girer (bkz. <see cref="LocalAiServer.EngineId"/>).
     /// </summary>
     public static string EngineId(this AiProvider provider, string model) => $"{provider.Id()}:{model}";
@@ -84,7 +84,7 @@ public static class AiProviders
 /// Listedeki bir model ve onunla gönderilen ayarlar (Mac'teki AIModel ile aynı). Kullanıcı model adı yazamaz; yalnız bu
 /// listeden seçer.
 /// </summary>
-/// <param name="Label">Ayarlarda görünen ad (Localizable.xcstrings anahtarı).</param>
+/// <param name="Label">Ayarlarda görünen model adı ya da Localizable.xcstrings anahtarı.</param>
 /// <param name="Effort">OpenAI'da <c>reasoning_effort</c>, Claude'da <c>output_config.effort</c>; null ise gönderilmez.</param>
 /// <param name="Thinking">Gemini'de <c>thinkingConfig.thinkingLevel</c>, Claude'da <c>thinking.type</c>; null ise gönderilmez.</param>
 /// <param name="FreeTier">

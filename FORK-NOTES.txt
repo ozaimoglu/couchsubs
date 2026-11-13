@@ -1,0 +1,26 @@
+CouchSubs - Gemini 3.8 Flash fork
+Version: 0.1.0-beta.35.gemini38.1
+Modified: 2026-11-14, ozaimoglu
+Source: https://github.com/ozaimoglu/couchsubs
+Upstream: https://github.com/yorulmazsinan/couchsubs
+License: AGPL-3.0-only; upstream attribution and third-party notices are preserved.
+
+Gemini now defaults to gemini-3.8-flash with thinkingLevel LOW. The application
+limit is 10 requests/minute; actual Google quotas can be lower. The old default
+gemini-3.5-flash-lite is removed from this fork's catalog, so existing settings
+are normalized to Gemini 3.8 and saved at startup by the existing settings flow.
+An explicitly selected gemini-3.6-flash remains available. Gemini API credentials,
+pairings and personal settings are not included in the package.
+
+The Windows updater checks this fork rather than upstream. Packages are built
+on demand with GitHub Actions: gh workflow run gemini38-windows.yml --repo
+ozaimoglu/couchsubs. This runs Swift core tests, Android TV unit tests/build,
+Windows native and .NET tests, packaging checks and screen rendering checks.
+The installer contains the TV packages, native DLLs, Visual C++ runtime and TTS
+executable. Model weights are not bundled. No live Google translation quality
+or latency benchmark is implied by offline request construction tests.
+
+Google references checked 2026-11-14:
+https://aistudio.google.com/docs/models/gemini-3.8-flash
+https://aistudio.google.com/docs/thinking
+https://aistudio.google.com/docs/pricing#gemini-3.8-flash

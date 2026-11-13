@@ -17,11 +17,11 @@ public enum AIProvider: String, Codable, CaseIterable, Sendable {
     /// Kullanıcının bilgisayarındaki model (Ollama, LM Studio).
     public var isLocal: Bool { self == .local }
 
-    /// Seçilebilen modeller; ilki varsayılandır (hızlı ve ucuz). Liste Windows ile ortak `ai-models.json` dosyasından gelir.
+    /// Seçilebilen modeller; ilki varsayılandır. Liste Windows ile ortak `ai-models.json` dosyasından gelir.
     /// Yerel modelde liste yoktur; model adını kullanıcı yazar.
     public var models: [AIModel] { AIModel.catalog[rawValue] ?? [] }
 
-    /// Hızlı ve ucuz varsayılan model.
+    /// Katalogdaki varsayılan model.
     public var defaultModel: AIModel {
         isLocal ? AIModel(id: LocalAIServer.defaultModel, label: LocalAIServer.defaultModel) : models[0]
     }
@@ -67,7 +67,7 @@ public enum AIProvider: String, Codable, CaseIterable, Sendable {
 /// Listedeki bir model ve onunla gönderilen ayarlar. Kullanıcı model adı yazamaz; yalnız bu listeden seçer.
 public struct AIModel: Codable, Equatable, Sendable {
     public var id: String
-    /// Ayarlarda görünen ad (Localizable.xcstrings anahtarı).
+    /// Ayarlarda görünen model adı ya da Localizable.xcstrings anahtarı.
     public var label: String
     /// OpenAI'da `reasoning_effort`, Claude'da `output_config.effort`; nil ise gönderilmez.
     public var effort: String?

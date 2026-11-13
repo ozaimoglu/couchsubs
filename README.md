@@ -2,6 +2,8 @@
 
 # CouchSubs
 
+Bu fork Gemini çevirisini varsayılan olarak **Gemini 3.8 Flash** ile çalıştırır. Windows paketi ve yeniden derleme bilgisi: [FORK-NOTES.txt](FORK-NOTES.txt).
+
 **PS5 oyunlarına Türkçe yama: Türkçe dil desteği olmayan oyunları Türkçe altyazıyla oynayın.**
 
 Site, kurulum rehberi ve SSS: **[couchsubs.enmeraapps.com](https://couchsubs.enmeraapps.com)**

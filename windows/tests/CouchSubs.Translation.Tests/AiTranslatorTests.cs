@@ -113,15 +113,15 @@ public class AiTranslatorTests
         var fake = new FakeAi();
         Assert.Equal("KRATOS: [tr] We go now.", await Make(AiProvider.Gemini, fake).TranslateAsync("KRATOS: We go now."));
         var (request, body) = fake.Requests[0];
-        Assert.Equal("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent", request.RequestUri!.AbsoluteUri);
+        Assert.Equal("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", request.RequestUri!.AbsoluteUri);
         Assert.Equal(HttpMethod.Post, request.Method);
         Assert.Equal(Secret, Assert.Single(request.Headers.GetValues("x-goog-api-key")));
         Assert.Null(request.Headers.Authorization);
         var json = JsonNode.Parse(body)!;
         Assert.Equal(AiRequest.SystemPrompt, json["systemInstruction"]!["parts"]![0]!["text"]!.GetValue<string>());
         Assert.Equal(AiRequest.MaxOutputTokens, json["generationConfig"]!["maxOutputTokens"]!.GetValue<int>());
-        // Flash-Lite zaten en az düşünmeyle çalışır; düşünme ayarı gönderilmez.
-        Assert.Null(json["generationConfig"]!["thinkingConfig"]);
+        // Gemini 3.8 Flash düşük düşünmeyle çağrılır; minimal bu modelde desteklenmez.
+        Assert.Equal("LOW", json["generationConfig"]!["thinkingConfig"]!["thinkingLevel"]!.GetValue<string>());
         // Konuşmacı etiketi gönderilmez; yalnız cümle gider.
         Assert.EndsWith("[\"We go now.\"]", User(fake, 0));
         Assert.DoesNotContain("KRATOS", User(fake, 0));
@@ -190,15 +190,15 @@ public class AiTranslatorTests
         var fake = new FakeAi();
         await Make(AiProvider.OpenAi, fake, model: "gpt-4o").TranslateAsync("Run!");
         Assert.Equal("gpt-6-luna", JsonNode.Parse(fake.Requests[0].Body)!["model"]!.GetValue<string>());
-        Assert.Equal("gemini-3.5-flash-lite", AiProvider.Gemini.Model("").Id);
+        Assert.Equal("gemini-3.8-flash", AiProvider.Gemini.Model("").Id);
         Assert.Equal("claude-haiku-5-5", AiProvider.Claude.Model(null).Id);
-        Assert.Equal("gemini:gemini-3.5-flash-lite", AiProvider.Gemini.EngineId("gemini-3.5-flash-lite"));
+        Assert.Equal("gemini:gemini-3.8-flash", AiProvider.Gemini.EngineId("gemini-3.8-flash"));
         Assert.Equal("openai:gpt-6-luna", AiProvider.OpenAi.EngineId(AiProvider.OpenAi.DefaultModel().Id));
     }
 
     /// <summary>
-    /// Liste Mac ile ortak dosyadan (core/Sources/CouchSubsCore/Resources/ai-models.json) gömülür; her hizmette önerilen
-    /// hızlı model ilk sıradadır.
+    /// Liste Mac ile ortak dosyadan (core/Sources/CouchSubsCore/Resources/ai-models.json) gömülür; her hizmette varsayılan
+    /// model ilk sıradadır.
     /// </summary>
     [Fact]
     public void CatalogIsTheSharedFile()
@@ -214,12 +214,13 @@ public class AiTranslatorTests
         {
             Assert.Equal(parsed[provider.Id()], provider.Models());
             Assert.True(provider.Models().Count >= 2);
-            Assert.Equal("Fast and cheap (recommended)", provider.DefaultModel().Label);
+            Assert.Equal(provider == AiProvider.Gemini ? "Gemini 3.8 Flash" : "Fast and cheap (recommended)", provider.DefaultModel().Label);
             Assert.Equal(provider.Models().Count, provider.Models().Select(m => m.Id).Distinct().Count());
-            // Etiketler ortak metin dosyasında çevrilmiş olmalı.
-            Assert.NotEqual(provider.DefaultModel().Label, Localizer.ForLanguage("tr")[provider.DefaultModel().Label]);
+            // Gemini seçenekleri çevrilmeyen model adlarıdır; diğer etiketler yerelleştirilir.
+            if (provider != AiProvider.Gemini)
+                Assert.NotEqual(provider.DefaultModel().Label, Localizer.ForLanguage("tr")[provider.DefaultModel().Label]);
         }
-        Assert.Equal(new AiModel("gemini-3.5-flash-lite", "Fast and cheap (recommended)", FreeTier: true, RequestsPerMinute: 15),
+        Assert.Equal(new AiModel("gemini-3.8-flash", "Gemini 3.8 Flash", Thinking: "LOW", FreeTier: true, RequestsPerMinute: 10),
                      AiProvider.Gemini.DefaultModel());
         Assert.Equal("disabled", AiProvider.Claude.DefaultModel().Thinking);
     }

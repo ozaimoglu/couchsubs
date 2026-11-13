@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: Gemini 3.8 Windows package
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core-tests:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shared model catalog and Swift tests
+        run: swift test --package-path core
+
+  android:
+    uses: ./.github/workflows/tv-android.yml
+
+  windows:
+    needs: [core-tests, android]
+    uses: ./.github/workflows/windows.yml
+    with:
+      with-android: true

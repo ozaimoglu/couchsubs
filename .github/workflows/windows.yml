@@ -4,8 +4,6 @@
 name: windows
 
 on:
-  push:
-    branches: [main, "feat/windows-*"]
   workflow_dispatch:
   # Sürüm iş akışı (release.yml) Windows paketini buradan alır.
   workflow_call:
@@ -17,6 +15,7 @@ on:
 
 env:
   FFMPEG_VERSION: "7.1.2"
+  FORK_BUILD_VERSION: "0.1.0-beta.35.gemini38.1"
 
 jobs:
   native:
@@ -151,7 +150,14 @@ jobs:
 
       # Zamanlamaya bakan testler var; test projeleri aynı anda koşup işlemciyi paylaşmasın.
       - name: Testler
-        run: dotnet test windows/CouchSubs.Windows.slnx -c Release --no-build -m:1
+        run: dotnet test windows/CouchSubs.Windows.slnx -c Release --no-build -m:1 --logger trx
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: couchsubs-test-results
+          path: windows/tests/**/TestResults/*.trx
+          if-no-files-found: warn
 
       - uses: actions/download-artifact@v4
         if: inputs.with-android
@@ -171,7 +177,7 @@ jobs:
       - name: Yayınla
         shell: bash
         run: |
-          if [[ "$GITHUB_REF_TYPE" == tag ]]; then VERSION="${GITHUB_REF_NAME#v}"; else VERSION=0.1.0-dev; fi
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then VERSION="${GITHUB_REF_NAME#v}"; else VERSION="$FORK_BUILD_VERSION"; fi
           dotnet publish windows/src/CouchSubs.App -c Release -r win-x64 --self-contained -o publish/CouchSubs -p:Version="$VERSION"
 
       # Ücretsiz çeviri motoru (ONNX Runtime) Visual C++ çalışma zamanına bağlı: onnxruntime.dll VCRUNTIME140(_1).dll ve
@@ -235,12 +241,12 @@ jobs:
       - name: Kurulum dosyası
         shell: pwsh
         run: |
-          $version = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME.TrimStart("v") } else { "0.1.0-dev" }
+          $version = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME.TrimStart("v") } else { $env:FORK_BUILD_VERSION }
           Copy-Item -Recurse publish/CouchSubs pack
-          Copy-Item LICENSE, THIRD-PARTY-NOTICES.md pack/
+          Copy-Item LICENSE, NOTICE, THIRD-PARTY-NOTICES.md, FORK-NOTES.txt pack/
           dotnet tool install -g vpk --version 1.2.161
           if ($env:GITHUB_REF_TYPE -eq "tag") {
-            vpk download github --repoUrl https://github.com/yorulmazsinan/couchsubs -o Releases
+            vpk download github --repoUrl https://github.com/ozaimoglu/couchsubs -o Releases
             if ($LASTEXITCODE -ne 0) { Write-Host "Önceki Velopack sürümü yok; yalnız tam paket üretilecek." }
           }
           # --framework webview2: PlayStation giriş penceresi WebView2 ister; eksik bilgisayarlarda kurulum onu da kurar.
